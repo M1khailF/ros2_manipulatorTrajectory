@@ -5,60 +5,22 @@ class Circle3Points:
     def __init__(self):
         pass
 
-    def calculate(self, inputMatrix):
+    def circle_from_points(self, matrix):
+        x1, y1 = matrix[0][0], matrix[0][1]
+        x2, y2 = matrix[1][0], matrix[1][1]
+        x3, y3 = matrix[2][0], matrix[2][1]
+
+        x = ((y2 - y1) * (y3**2 - y1**2 + x3**2 - x1**2) - (y3 - y1) * (y2**2 - y1**2 + x2**2 - x1**2)) / (2 * ((x3 - x1) * (y2 - y1) - (x2 - x1) * (y3 - y1)))
+        y = ((x2 - x1) * (x3**2 - x1**2 + y3**2 - y1**2) - (x3 - x1) * (x2**2 - x1**2 + y2**2 - y1**2)) / (2 * ((y3 - y1) * (x2 - x1) - (y2 - y1) * (x3 - x1)))
         
-        d1 = inputMatrix[0][0]**2 + inputMatrix[0][1]**2 + inputMatrix[0][2]**2 - (inputMatrix[1][0]**2 + inputMatrix[1][1]**2 + inputMatrix[1][2]**2)
-        d2 = inputMatrix[0][0]**2 + inputMatrix[0][1]**2 + inputMatrix[0][2]**2 - (inputMatrix[2][0]**2 + inputMatrix[2][1]**2 + inputMatrix[2][2]**2)
-        d3 = inputMatrix[1][0]**2 + inputMatrix[1][1]**2 + inputMatrix[1][2]**2 - (inputMatrix[2][0]**2 + inputMatrix[2][1]**2 + inputMatrix[2][2]**2)
-
-        A = np.array([[(inputMatrix[0][0] - inputMatrix[1][0]), (inputMatrix[0][1] - inputMatrix[1][1]), (inputMatrix[0][2] - inputMatrix[1][2])],
-                        [(inputMatrix[0][0] - inputMatrix[2][0]), (inputMatrix[0][1] - inputMatrix[2][1]), (inputMatrix[0][2] - inputMatrix[2][2])],
-                        [(inputMatrix[1][0] - inputMatrix[2][0]), (inputMatrix[1][1] - inputMatrix[2][1]), (inputMatrix[1][2] - inputMatrix[2][2])]])
+        radius = ((x1 - x)**2 + (y1 - y)**2) ** 0.5
         
-        B = np.array([[d1/2],
-                        [d2/2],
-                        [d3/2]])
-
-        x, residuals, rank, singular_values = np.linalg.lstsq(A, B, rcond=None)
-        print(f"Промежуточная матрица {A}")
-        print(f"Промежуточные выходы {B}")
-        # print(round(x[0][0], 2), round(x[1][0], 2), round(x[2][0], 2))
-        radious = sqrt((inputMatrix[0][0] - x[0][0])**2 + (inputMatrix[0][1] - x[1][0])**2 + (inputMatrix[0][2] - x[2][0])**2)
-        return x, radious
-    
-    def angles(self, inputMatrix):
-        # Координаты трех точек
-        point1 = np.array([inputMatrix[0][0], inputMatrix[0][1], inputMatrix[0][2]])
-        point2 = np.array([inputMatrix[1][0], inputMatrix[1][1], inputMatrix[1][2]])
-        point3 = np.array([inputMatrix[2][0], inputMatrix[2][1], inputMatrix[2][2]])
-
-        vector1 = point2 - point1
-        vector2 = point3 - point1
-
-        normal_vector = np.cross(vector1, vector2)
-        normalized_normal = normal_vector / np.linalg.norm(normal_vector)
-
-        normalized_origin_x = np.array([1, 0, 0])
-        normalized_origin_y = np.array([0, 1, 0])
-        normalized_origin_z = np.array([0, 0, 1])
-
-        alpha = np.arccos(np.dot(normalized_origin_x, normalized_normal)) - pi/2
-        beta = np.arccos(np.dot(normalized_origin_y, normalized_normal)) - pi/2
-        gamma = np.arccos(np.dot(normalized_origin_z, normalized_normal))
-
-        # return [np.degrees(alpha), np.degrees(beta), np.degrees(gamma)]
-        return [alpha, beta, gamma]
-
+        return [round(x, 2), round(y, 2)], round(radius, 2)
 
 if __name__ == "__main__":
-    inputMat = np.array([[2.0, 1.0, 0.0],
-                    [2.0, 2.0, 1.0],
-                    [1.0, 0.0, 1.0]])
-    
-    print("Входная матрица", inputMat)
-    
+    inputMat = np.array([[0.0, 1.0, 0.0],
+                    [1.866, -0.5, 1.0],
+                    [-0.866, -0.5, 1.0]])
     c = Circle3Points()
-    centre, r = c.calculate(inputMat)
-    angles = c.angles(inputMat)
-    print("Круг", centre, r)
-    print(angles)
+    c, r = c.circle_from_points(inputMat)
+    print(c,r)

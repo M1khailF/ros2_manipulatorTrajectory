@@ -13,30 +13,46 @@ class TF2Publisher(Node):
         self.z = []
 
         self.countPoints = 3
-        # for i in range(self.countPoints):
-        #     self.x.append(random.uniform(-0.5, 1.9))
-        #     self.y.append(random.uniform(-0.5, 1.9))
-        #     self.z.append(random.uniform(-0.5, 1.9))
         for i in range(self.countPoints):
-            self.x.append(random.randint(0, 2))
-            self.y.append(random.randint(0, 2))
-            self.z.append(random.randint(0, 2))
+            self.x.append(random.uniform(-0.5, 1.9))
+            self.y.append(random.uniform(-0.5, 1.9))
+            self.z.append(random.uniform(-0.5, 1.9))
+        # for i in range(self.countPoints):
+        #     self.x.append(random.randint(-2, 2))
+        #     self.y.append(random.randint(-2, 2))
+        #     self.z.append(random.randint(-2, 2))
+
+        # for i in range(self.countPoints):
+        #     if i == 0:
+        #         self.x.append(1.6760929772154727)
+        #         self.y.append(-0.11304021993592733)
+        #         self.z.append(0.09733625714154659)
+
+        #     if i == 1:
+        #         self.x.append(-0.0949834851208114)
+        #         self.y.append(0.9337026471169034)
+        #         self.z.append(1.3040764851765336)
+
+        #     if i == 2:
+        #         self.x.append(-0.3007775678924206)
+        #         self.y.append(1.621949262238985)
+        #         self.z.append(-0.3193286785176839)
 
         # for i in range(self.countPoints):
         #     if i == 0:
         #         self.x.append(0)
         #         self.y.append(1)
-        #         self.z.append(2)
+        #         self.z.append(0)
 
         #     if i == 1:
         #         self.x.append(-0.866)
         #         self.y.append(-0.5)
-        #         self.z.append(1)
+        #         self.z.append(0)
 
         #     if i == 2:
-        #         self.x.append(0.866)
+        #         self.x.append(1.866)
         #         self.y.append(-0.5)
-        #         self.z.append(1)
+        #         self.z.append(0)
 
         self.timer = self.create_timer(1, self.publish_tf)
         self.publisher = self.create_publisher(PoseArray, 'point_topic', 10)

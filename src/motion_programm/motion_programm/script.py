@@ -11,7 +11,7 @@ import numpy as np
 import tf_transformations
 from PID_test import PIDController
 from CirclePath import Circle3Points
-from test import Plane
+from Plane import Plane
 # from radius import FindRadius
 
 
@@ -47,6 +47,7 @@ class MinimalSubscriber(Node):
 
         self.publisher = self.create_publisher(TransformStamped, 'tf2_topic1', 10)
         self.publisher_path = self.create_publisher(Path, 'path_topic', 10)
+        self.publisher_path_circle = self.create_publisher(Path, 'path_circle', 10)
         # self.publisherVector = self.create_publisher(Marker, "vector_marker", 10)
         self.publisherVector = self.create_publisher(PoseArray, 'vector_manipulator', 10)
         self.timer = self.create_timer(0.01, self.publish_tf)
@@ -66,31 +67,60 @@ class MinimalSubscriber(Node):
         return [qx, qy, qz, qw]
     
     def z_rotation(self, vector, angle):
-        z_rot = np.array([[cos(angle), -sin(angle), 0, 0],
-                        [sin(angle), cos(angle), 0, 0],
-                        [0, 0, 1, 0],
-                        [0, 0, 0, 1]])
+        z_rot = np.array([[cos(angle), -sin(angle), 0],
+                        [sin(angle), cos(angle), 0],
+                        [0, 0, 1]])
 
         res = z_rot@np.array(vector)
         return res.tolist()
 
     def y_rotation(self, vector, angle):
-        y_rot = np.array([[cos(angle), 0, sin(angle), 0],
-                        [0, 1, 0, 0],
-                        [-sin(angle), 0, cos(angle), 0],
-                        [0, 0, 0, 1]])
+        y_rot = np.array([[cos(angle), 0, sin(angle)],
+                        [0, 1, 0],
+                        [-sin(angle), 0, cos(angle)]])
 
         res = y_rot@np.array(vector)
         return res.tolist()
     
-    def shift_system(self, vector, offset):
-        vec = np.array([[1, 0 , 0, 0],
-                        [0, 1, 0, 0],
-                        [0, 0, 1, 0],
-                        [offset[0], offset[1], offset[2], 1]])
+    def x_rotation(self, vector, angle):
+        x_rot = np.array([[1, 0, 0],
+                        [0, cos(angle), -sin(angle)],
+                        [0, sin(angle), cos(angle)]])
 
-        res = np.matmul(vector, vec)
-        return res
+        res = x_rot@np.array(vector)
+        return res.tolist()
+    
+    def shift_system_minus(self, vector, offset):
+        for i in range(len(vector)):
+            vector[i][0] = vector[i][0] - offset[0]
+            vector[i][1] = vector[i][1] - offset[1]
+            vector[i][2] = vector[i][2] - offset[2]
+        return vector
+    
+    def shift_system_plus(self, vector, offset):
+        for i in range(len(vector)):
+            vector[i][0] = vector[i][0] + offset[0]
+            vector[i][1] = vector[i][1] + offset[1]
+            vector[i][2] = vector[i][2] + offset[2]
+        return vector
+    
+    # def shift_system_minus(self, vector, offset):
+    #     vec = np.array([[1, 0 , 0, 0],
+    #                     [0, 1, 0, 0],
+    #                     [0, 0, 1, 0],
+    #                     [-offset[0], -offset[1], -offset[2], 1]])
+
+    #     res = np.matmul(vector, vec)
+    #     return res
+    
+    # def shift_system_plus(self, vector, offset):
+    #     vec = np.array([[1, 0 , 0, 0],
+    #                     [0, 1, 0, 0],
+    #                     [0, 0, 1, 0],
+    #                     [offset[0], offset[1], offset[2], 1]])
+
+    #     res = np.matmul(vector, vec)
+    #     return res
     
     def listener_callback(self, msg):
         self.pointMove = []
@@ -201,7 +231,7 @@ class MinimalSubscriber(Node):
                             self.move = [self.speed, 0, 0, 1]
                             self.move = self.y_rotation(self.move, self.angelsMove[self.numPoint][1])
                             self.move = self.z_rotation(self.move, self.angelsMove[self.numPoint][2])
-                            self.move = self.shift_system(self.move, self.pointManipulator)
+                            self.move = self.shift_system_plus(self.move, self.pointManipulator)
 
                             self.x = self.move[0]
                             self.y = self.move[1]
@@ -268,7 +298,7 @@ class MinimalSubscriber(Node):
                         self.move = [self.speed, 0, 0, 1]
                         self.move = self.y_rotation(self.move, self.localAngle[1])
                         self.move = self.z_rotation(self.move, self.localAngle[2])
-                        self.move = self.shift_system(self.move, self.pointManipulator)
+                        self.move = self.shift_system_plus(self.move, self.pointManipulator)
 
                         self.x = self.move[0]
                         self.y = self.move[1]
@@ -282,15 +312,43 @@ class MinimalSubscriber(Node):
 
                 elif self.mode == 3:
                     if self.countPoint == 3:
-                        matrix = [[self.pointMove[0][0], self.pointMove[0][1], self.pointMove[0][2]],[self.pointMove[1][0], self.pointMove[1][1], self.pointMove[1][2]], [self.pointMove[2][0], self.pointMove[2][1], self.pointMove[2][2]] ]
-                        print(matrix)
+                        matrix = [[self.pointMove[0][0], self.pointMove[0][1], self.pointMove[0][2]],[self.pointMove[1][0], self.pointMove[1][1], self.pointMove[1][2]], [self.pointMove[2][0], self.pointMove[2][1], self.pointMove[2][2]]]
                         plane = Plane()
+                    
+                        self.center3Points = plane.centerCoord(matrix)
+                        matrix = self.shift_system_minus(matrix, self.center3Points)
 
-                        angl, center = plane.find_plane_angles(matrix[0], matrix[1], matrix[2])
-                        # cx, r = self.circlePath.calculate(matrix)
-                        # angl = self.circlePath.angles(matrix)
-                        # print(cx, r)
-                        points.append(self.tf_pose_with_angles("circle", center[0], center[1], center[2], angl))
+                        normal_vector = plane.calculate_normal(matrix)
+                        projection_oyz = [normal_vector[0], 0.0, normal_vector[2]]
+                        self.angle_oyz = plane.angle_between(projection_oyz, np.array([0, 0, 1]))
+
+                        for i in range(len(matrix)):
+                            matrix[i] = self.y_rotation(matrix[i], self.angle_oyz)
+                            
+                        normal_vector = plane.calculate_normal(matrix)
+                        self.angle_oxz = plane.angle_between(normal_vector, np.array([0, 0, 1]))
+
+                        for i in range(len(matrix)):
+                            matrix[i] = self.x_rotation(matrix[i], self.angle_oxz)
+                            points.append(self.tf_pose_with_angles(f"newpt_{i}", matrix[i][0], matrix[i][1], matrix[i][2], [0,0,0]))
+
+                        normal_vector = plane.calculate_normal(matrix)
+
+                        cCircle, radious = self.circlePath.circle_from_points(matrix)
+
+                        self.matrixCircle = []
+                        for i in range(36):
+                            pointCircle = [cCircle[0] + (radious*cos(np.radians(i * 10))), cCircle[1] + (radious*sin(np.radians(i * 10))), 0.0]
+                            # print(pointCircle)
+                            pointCircle = self.x_rotation(pointCircle, -self.angle_oxz)
+                            pointCircle = self.y_rotation(pointCircle, -self.angle_oyz)
+                            self.matrixCircle.append(pointCircle)
+                        
+                        self.matrixCircle = self.shift_system_plus(self.matrixCircle, self.center3Points)
+
+                        self.CirclePath(self.matrixCircle)
+                        points.append(self.tf_pose_with_angles(f"normal_plane_ROT", normal_vector[0], normal_vector[1], normal_vector[2], [0,0,0]))
+                        points.append(self.tf_pose_with_angles("circle", self.center3Points[0], self.center3Points[1], self.center3Points[2], [0,0,0]))
                         self.publisher.publish(points[0])
             else:
                 self.speed = 0
@@ -329,6 +387,34 @@ class MinimalSubscriber(Node):
 
         self.publisher_path.publish(path_msg)
         self.get_logger().info('Published path')
+
+    def CirclePath(self, matrix):
+        path_msg = Path()
+        path_msg.header.frame_id = 'world'
+        path_msg.header.stamp = self.get_clock().now().to_msg()
+        
+        for i in range(len(matrix) - 1):
+            point1 = PoseStamped()
+            point1.pose.position.x = matrix[i][0]
+            point1.pose.position.y = matrix[i][1]
+            point1.pose.position.z = matrix[i][2]
+            point1.pose.orientation.x = 0.0
+            point1.pose.orientation.y = 0.0
+            point1.pose.orientation.z = 0.0
+            point1.pose.orientation.w = 1.0
+            path_msg.poses.append(point1)
+
+            point2 = PoseStamped()
+            point2.pose.position.x = matrix[i + 1][0]
+            point2.pose.position.y = matrix[i + 1][1]
+            point2.pose.position.z = matrix[i + 1][2]
+            point2.pose.orientation.x = 0.0
+            point2.pose.orientation.y = 0.0
+            point2.pose.orientation.z = 0.0
+            point2.pose.orientation.w = 1.0
+            path_msg.poses.append(point2)
+
+            self.publisher_path_circle.publish(path_msg)
 
     def tf_pose(self, name, x, y, z):
         tf_msg = TransformStamped()
